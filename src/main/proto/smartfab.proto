@@ -1,0 +1,66 @@
+syntax = "proto3";
+package proto;
+
+option java_package = "proto.generated";
+option java_multiple_files = true;
+
+/** Defines remotes RPC endpoints for client server communication */
+service CoordinationService {
+  rpc Presentation(Line) returns (Ack);
+  rpc Calibration(CalibrationRequest) returns (CalibrationAck);
+  rpc Reply(Grant) returns (Ack);
+  rpc Leave(Line) returns (Ack);
+  rpc Down(Unreachable) returns (Ack);
+  rpc Ping(PingRequest) returns (Ack);
+  rpc VerifyReachability(ReachableRequest) returns (ReachableResult);
+}
+
+message Line {
+  int32 id = 1;
+  string address = 2;
+  int32 port = 3;
+}
+
+message Unreachable {
+  int32 line_id = 1;
+}
+
+message Ack {}
+
+message CalibrationRequest {
+  int32 requester_id = 1;
+  double criticality = 2;
+}
+
+/**
+ * Response to Calibration specifically, carrying enough information
+ * for the caller to know how (and whether) to wait: deferred=false
+ * means a Reply is coming shortly; deferred=true with
+ * known_deadline=true means the responder is UnderCalibration and
+ * remaining_ms is an exact lease; deferred=true with
+ * known_deadline=false means the responder is itself waiting on an
+ * unknown chain and only a generic timeout/retry applies.
+ */
+message CalibrationAck {
+  bool deferred = 1;
+  bool known_deadline = 2;
+  int64 remaining_ms = 3;
+}
+
+message Grant {
+  int32 granter_id = 1;
+}
+
+message PingRequest {
+  int32 requester_id = 1;
+}
+
+/** Sent by A to a third peer C: "try to ping target_id for me". */
+message ReachableRequest {
+  int32 target_id = 1;
+}
+
+/** C's answer: whether C itself managed to reach target_id. */
+message ReachableResult {
+  bool reachable = 1;
+}
